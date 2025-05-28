@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NUT Rover Control</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0; padding: 0;
+      font-family: 'Orbitron', sans-serif;
+    }
+    body {
+      background: #0d1117;
+      color: #00ffc3;
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+    a {
+      color: #00ffc3;
+      text-decoration: none;
+      transition: color 0.3s;
+    }
+    a:hover {
+      color: #00c0a0;
+    }
+
+    header {
+      background: #161b22;
+      padding: 1rem 2rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #30363d;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .logo {
+      font-weight: 700;
+      font-size: 1.5rem;
+      color: #00ffc3;
+    }
+    nav a {
+      margin-left: 1.5rem;
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .hero {
+      background: url('bbb.png') center/cover no-repeat;
+      color: white;
+      padding: 4rem 2rem;
+      text-align: center;
+      min-height: 320px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      box-shadow: inset 0 0 60px rgb(0 0 0 / 0.75);
+    }
+    .hero h1 {
+      font-size: 2.5rem;
+      max-width: 600px;
+      margin-bottom: 1rem;
+      font-weight: 700;
+      text-shadow: 0 0 8px rgba(0,0,0,0.7);
+    }
+    .hero p {
+      font-size: 1.2rem;
+      margin-bottom: 2rem;
+      max-width: 480px;
+    }
+    .hero .btn-group {
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .btn {
+      background: #238636;
+      border: none;
+      color: white;
+      padding: 0.75rem 1.8rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background-color 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+    }
+    .btn:hover {
+      background: #2ea043;
+    }
+
+    main {
+      flex-grow: 1;
+      padding: 2rem;
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    .controls-card {
+      background: #161b22;
+      padding: 1.5rem 2rem;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgb(0 0 0 / 0.4);
+      margin-bottom: 2rem;
+    }
+    .controls-card h2 {
+      margin-bottom: 1rem;
+      color: #00ffc3;
+      font-weight: 600;
+      font-size: 1.5rem;
+    }
+    .btn-control {
+      background: #238636;
+      border: none;
+      color: white;
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      margin: 0.25rem;
+      transition: background-color 0.3s ease;
+    }
+    .btn-control:hover {
+      background: #2ea043;
+    }
+
+    .sensor-dashboard {
+      background: #0d1117;
+      border: 2px solid #238636;
+      padding: 1rem 2rem;
+      border-radius: 12px;
+      font-weight: 600;
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(120px,1fr));
+      gap: 1rem;
+      margin-bottom: 3rem;
+    }
+    .sensor-item {
+      background: #161b22;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      text-align: center;
+      box-shadow: inset 0 0 6px rgb(35 134 54 / 0.7);
+    }
+    .sensor-item span.value {
+      display: block;
+      font-size: 1.6rem;
+      margin-top: 0.2rem;
+      color: #7ee787;
+    }
+
+    #about {
+      max-width: 720px;
+      margin: 0 auto 3rem auto;
+      text-align: center;
+      padding: 0 1rem;
+    }
+    #about h2 {
+      font-weight: 700;
+      font-size: 2rem;
+      color: #00ffc3;
+      margin-bottom: 0.75rem;
+    }
+
+    footer {
+      background: #161b22;
+      color: #8b949e;
+      padding: 1rem 2rem;
+      text-align: center;
+      font-size: 0.9rem;
+      border-top: 1px solid #30363d;
+    }
+
+    #status {
+      margin-top: 1rem;
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .quality-select {
+      margin: 1rem 0;
+    }
+
+    @media (max-width: 600px) {
+      .hero h1 {
+        font-size: 1.8rem;
+      }
+      .hero p {
+        font-size: 1rem;
+      }
+      nav a {
+        font-size: 0.9rem;
+        margin-left: 1rem;
+      }
+      .btn-control {
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">NUT Rover</div>
+  <nav>
+    <a href="#controls">Controls</a>
+    <a href="#about">About</a>
+  </nav>
+</header>
+
+<section class="hero">
+  <h1>Explore the World with NUT Rover</h1>
+  <p>Powered by ESP32-CAM and real-time environmental sensors for research, adventure, and innovation.</p>
+  <div class="btn-group">
+    <a href="#controls" class="btn">Control Rover</a>
+    <a href="#about" class="btn" style="background:#444;">Learn More</a>
+  </div>
+</section>
+
+<main>
+  <section id="controls" class="controls-card">
+    <h2>Camera Controls</h2>
+    <div>
+      <button class="btn-control" onclick="setCamera('vflip', 1)">Flip Vertical</button>
+      <button class="btn-control" onclick="setCamera('vflip', 0)">Unflip Vertical</button>
+      <button class="btn-control" onclick="setCamera('hmirror', 1)">Flip Horizontal</button>
+      <button class="btn-control" onclick="setCamera('hmirror', 0)">Unflip Horizontal</button>
+    </div>
+
+    <h2 style="margin-top:2rem;">Movement Controls</h2>
+    <div>
+      <button class="btn-control" onclick="moveRover('forward')">Forward</button>
+      <button class="btn-control" onclick="moveRover('left')">Left</button>
+      <button class="btn-control" onclick="moveRover('stop')">Stop</button>
+      <button class="btn-control" onclick="moveRover('right')">Right</button>
+      <button class="btn-control" onclick="moveRover('backward')">Backward</button>
+    </div>
+
+    <div id="status"></div>
+  </section>
+
+  <section class="controls-card">
+    <h2>Live Camera Feed</h2>
+    <div class="quality-select">
+      <label for="quality">Resolution:</label>
+      <select id="quality" onchange="changeResolution(this.value)">
+        <option value="10">UXGA (1600x1200)</option>
+        <option value="9">SXGA (1280x1024)</option>
+        <option value="8">XGA (1024x768)</option>
+        <option value="7">SVGA (800x600)</option>
+        <option value="6">VGA (640x480)</option>
+        <option value="5" selected>QVGA (320x240)</option>
+        <option value="4">HQVGA (240x160)</option>
+      </select>
+    </div>
+    <img src="http://192.168.8.157:81/stream" style="width:100%;max-width:480px;border-radius:8px;" alt="Camera Stream" />
+  </section>
+
+  <section class="sensor-dashboard" aria-label="Sensor Data">
+    <div class="sensor-item">
+      Temperature
+      <span id="temp" class="value">-- °C</span>
+    </div>
+    <div class="sensor-item">
+      Humidity
+      <span id="hum" class="value">-- %</span>
+    </div>
+    <div class="sensor-item">
+      Speed
+      <span id="speed" class="value">-- km/h</span>
+    </div>
+    <div class="sensor-item">
+      RPM
+      <span id="rpm" class="value">--</span>
+    </div>
+  </section>
+
+  <section id="about">
+    <h2>About NUT Rover</h2>
+    <p>
+      NUT Rover is an autonomous exploration platform powered by ESP32-CAM and real-time environmental sensors. Designed for research, adventure, and innovation.
+    </p>
+  </section>
+</main>
+
+<footer>
+  &copy; 2025 NUT Rover Team. All rights reserved.
+</footer>
+
+<script>
+  const ESP32_IP = "192.168.8.157";
+
+  function setCamera(setting, value) {
+    fetch(`http://${ESP32_IP}/control?var=${setting}&val=${value}`)
+      .then(() => updateStatus(`Camera setting '${setting}' set to ${value}`))
+      .catch(() => updateStatus("Camera control error"));
+  }
+
+  function moveRover(direction) {
+    fetch(`http://${ESP32_IP}/move?dir=${direction}`)
+      .then(() => updateStatus(`Rover moving: ${direction}`))
+      .catch(() => updateStatus("Failed to send movement command"));
+  }
+
+  function updateStatus(message) {
+    const status = document.getElementById("status");
+    status.innerText = message;
+    setTimeout(() => { status.innerText = ""; }, 3000);
+  }
+
+  function changeResolution(val) {
+    fetch(`http://${ESP32_IP}/control?var=framesize&val=${val}`)
+      .then(() => updateStatus("Resolution changed"))
+      .catch(() => updateStatus("Failed to change resolution"));
+  }
+
+  setInterval(() => {
+    fetch(`http://${ESP32_IP}/data`)
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("temp").innerText = data.temp.toFixed(1) + " °C";
+        document.getElementById("hum").innerText = data.hum.toFixed(1) + " %";
+        document.getElementById("speed").innerText = data.speed.toFixed(1) + " km/h";
+        document.getElementById("rpm").innerText = data.rpm;
+      })
+      .catch(() => {
+        document.getElementById("temp").innerText = "-- °C";
+        document.getElementById("hum").innerText = "-- %";
+        document.getElementById("speed").innerText = "-- km/h";
+        document.getElementById("rpm").innerText = "--";
+      });
+  }, 2000);
+</script>
+
+</body>
+</html>

@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rover Control Dashboard</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #0f0f0f;
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+    }
+
+    header {
+      background-color: #1c1c1c;
+      padding: 20px;
+      text-align: center;
+      font-size: 1.8rem;
+      font-weight: bold;
+      border-bottom: 2px solid #333;
+    }
+
+    .main-container {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    .video-section {
+      flex: 2;
+      background-color: #121212;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 10px;
+    }
+
+    .video-section img {
+      width: 100%;
+      max-height: 100%;
+      object-fit: contain;
+      transform: scaleY(-1);
+      border: 2px solid #555;
+      border-radius: 12px;
+    }
+
+    .sidebar {
+      flex: 1;
+      background-color: #1a1a1a;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .panel {
+      margin-bottom: 20px;
+    }
+
+    .panel h2 {
+      font-size: 1.3rem;
+      margin-bottom: 10px;
+      border-bottom: 1px solid #444;
+      padding-bottom: 5px;
+    }
+
+    .gauge-container {
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+    }
+
+    .gauge {
+      width: 120px;
+      height: 120px;
+      background: radial-gradient(#222, #0d0d0d);
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 0 15px #00ffcc55;
+    }
+
+    .gauge-value {
+      font-size: 1.4rem;
+      color: #00ffff;
+      font-weight: bold;
+    }
+
+    .gauge-label {
+      font-size: 0.85rem;
+      color: #ccc;
+    }
+
+    .data-item {
+      display: flex;
+      justify-content: space-between;
+      margin: 10px 0;
+    }
+
+    .controls button, .controls select {
+      margin: 5px 0;
+      padding: 10px;
+      width: 100%;
+      background-color: #2a2a2a;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 1rem;
+    }
+
+    .controls button:hover, .controls select:hover {
+      background-color: #333;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    Remote Rover Dashboard
+  </header>
+  <div class="main-container">
+    <div class="video-section">
+      <img id="video" src="http://192.168.4.1:81/stream" alt="Camera Stream">
+    </div>
+    <div class="sidebar">
+      <div class="panel">
+        <h2>Sensor Stats</h2>
+        <div class="gauge-container">
+          <div class="gauge">
+            <div id="humidity" class="gauge-value">--%</div>
+            <div class="gauge-label">Humidity</div>
+          </div>
+          <div class="gauge">
+            <div id="temperature" class="gauge-value">--°C</div>
+            <div class="gauge-label">Temp</div>
+          </div>
+        </div>
+        <div class="data-item"><span>Speed</span><span id="speed">-- km/h</span></div>
+        <div class="data-item"><span>RPM</span><span id="rpm">--</span></div>
+      </div>
+      <div class="panel controls">
+        <h2>Camera Settings</h2>
+        <select onchange="setCamera('framesize', this.value)">
+          <option value="10">UXGA (1600x1200)</option>
+          <option value="9">SXGA (1280x1024)</option>
+          <option value="8">XGA (1024x768)</option>
+          <option value="7">SVGA (800x600)</option>
+          <option value="6">VGA (640x480)</option>
+          <option value="5" selected>QVGA (320x240)</option>
+          <option value="4">HQVGA (240x160)</option>
+        </select>
+        <button onclick="toggleFlash()">Toggle Flash</button>
+        <button onclick="flipVertical()">Flip Vertical</button>
+        <button onclick="flipHorizontal()">Flip Horizontal</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const CAMERA_IP = "192.168.4.1";  // Change to your ESP32 camera IP
+    const SENSOR_IP = "192.168.4.2";  // Change to your ESP32 sensor IP
+
+    setInterval(() => {
+      fetch(`http://${SENSOR_IP}/data`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("temperature").innerText = `${data.temp.toFixed(1)}°C`;
+          document.getElementById("humidity").innerText = `${data.hum.toFixed(1)}%`;
+          document.getElementById("speed").innerText = `${data.speed.toFixed(1)} km/h`;
+          document.getElementById("rpm").innerText = `${data.rpm}`;
+        }).catch(() => {
+          document.getElementById("temperature").innerText = '--°C';
+          document.getElementById("humidity").innerText = '--%';
+          document.getElementById("speed").innerText = '-- km/h';
+          document.getElementById("rpm").innerText = '--';
+        });
+    }, 2000);
+
+    function setCamera(setting, value) {
+      fetch(`http://${CAMERA_IP}/control?var=${setting}&val=${value}`);
+    }
+
+    function toggleFlash() {
+      fetch(`http://${CAMERA_IP}/led?var=led_intensity&val=255`);
+    }
+
+    function flipVertical() {
+      const video = document.getElementById("video");
+      video.style.transform = video.style.transform.includes("scaleY(-1)")
+        ? video.style.transform.replace("scaleY(-1)", "scaleY(1)")
+        : video.style.transform.replace("scaleY(1)", "scaleY(-1)");
+    }
+
+    function flipHorizontal() {
+      const video = document.getElementById("video");
+      if (video.style.transform.includes("scaleX(-1)")) {
+        video.style.transform = video.style.transform.replace("scaleX(-1)", "scaleX(1)");
+      } else if (video.style.transform.includes("scaleX(1)")) {
+        video.style.transform = video.style.transform.replace("scaleX(1)", "scaleX(-1)");
+      } else {
+        video.style.transform += " scaleX(-1)";
+      }
+    }
+  </script>
+</body>
+</html>

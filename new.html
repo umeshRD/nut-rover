@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NUT Rover | Live Explorer</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@500&display=swap" rel="stylesheet" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Orbitron', sans-serif;
+      background-color: #0d0d0d;
+      color: white;
+    }
+
+    header {
+      background-color: #111;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 15px 30px;
+      border-bottom: 2px solid #222;
+    }
+
+    header h1 {
+      font-size: 1.6rem;
+    }
+
+    nav a {
+      color: #00ffc3;
+      text-decoration: none;
+      margin-left: 20px;
+      font-size: 1rem;
+      transition: 0.2s;
+    }
+
+    nav a:hover {
+      color: #ffffff;
+    }
+
+    .hero {
+      height: 60vh;
+      background: url('cover.jpg') center/cover no-repeat;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 30px;
+    }
+
+    .hero h2 {
+      font-size: 3rem;
+      background: rgba(0,0,0,0.5);
+      padding: 20px;
+      border-radius: 10px;
+    }
+
+    .section {
+      padding: 40px 20px;
+      max-width: 1100px;
+      margin: auto;
+    }
+
+    .video-container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 30px;
+      justify-content: space-between;
+    }
+
+    .stream {
+      flex: 2;
+      min-width: 300px;
+    }
+
+    .stream img {
+      width: 100%;
+      border-radius: 12px;
+      border: 3px solid #00ffc3;
+      box-shadow: 0 0 15px #00ffc355;
+      transform: scaleY(-1);
+    }
+
+    .data-panel {
+      flex: 1;
+      background-color: #1a1a1a;
+      border-radius: 10px;
+      padding: 20px;
+      border: 1px solid #333;
+    }
+
+    .data-panel h3 {
+      margin-bottom: 10px;
+      border-bottom: 1px solid #444;
+      padding-bottom: 5px;
+    }
+
+    .data-item {
+      display: flex;
+      justify-content: space-between;
+      margin: 10px 0;
+    }
+
+    .data-panel select,
+    .data-panel button {
+      background: #222;
+      color: #00ffc3;
+      border: 1px solid #00ffc3;
+      padding: 10px;
+      margin: 6px 0;
+      width: 100%;
+      font-weight: bold;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .data-panel select:hover,
+    .data-panel button:hover {
+      background-color: #00ffc320;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      background: #111;
+      color: #666;
+      font-size: 0.9rem;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>NUT Rover</h1>
+    <nav>
+      <a href="#home">Home</a>
+      <a href="#live">Live</a>
+      <a href="#about">About</a>
+    </nav>
+  </header>
+
+  <section id="home" class="hero">
+    <h2>Explore the World with NUT Rover</h2>
+  </section>
+
+  <section id="live" class="section">
+    <h2 style="margin-bottom: 20px;">Live Stream & Environment Data</h2>
+    <div class="video-container">
+      <div class="stream">
+        <img id="video" src="http://192.168.8.157:81/stream" alt="ESP32-CAM Live Stream">
+      </div>
+      <div class="data-panel">
+        <h3>Environment Data</h3>
+        <div class="data-item"><span>Temperature:</span><span id="temp">-- °C</span></div>
+        <div class="data-item"><span>Humidity:</span><span id="hum">-- %</span></div>
+        <div class="data-item"><span>Speed:</span><span id="speed">-- km/h</span></div>
+        <div class="data-item"><span>RPM:</span><span id="rpm">--</span></div>
+
+        <h3 style="margin-top: 20px;">Camera Settings</h3>
+        <select onchange="setCamera('framesize', this.value)">
+          <option value="10">UXGA (1600x1200)</option>
+          <option value="9">SXGA (1280x1024)</option>
+          <option value="8">XGA (1024x768)</option>
+          <option value="7">SVGA (800x600)</option>
+          <option value="6">VGA (640x480)</option>
+          <option value="5" selected>QVGA (320x240)</option>
+          <option value="4">HQVGA (240x160)</option>
+        </select>
+
+        <button onclick="setCamera('vflip', 1)">Flip Vertical</button>
+        <button onclick="setCamera('vflip', 0)">Unflip Vertical</button>
+        <button onclick="setCamera('hmirror', 1)">Flip Horizontal</button>
+        <button onclick="setCamera('hmirror', 0)">Unflip Horizontal</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="about" class="section">
+    <h2>About NUT Rover</h2>
+    <p>NUT Rover is an autonomous exploration platform powered by ESP32-CAM and real-time environmental sensors. Designed for research, adventure, and innovation.</p>
+  </section>
+
+  <footer>
+    &copy; 2025 NUT Rover Team. All rights reserved.
+  </footer>
+
+  <script>
+    const CAMERA_IP = "192.168.8.157"; // ESP32-CAM
+    const SENSOR_IP = "192.168.8.100"; // ESP32 with sensors
+
+    function setCamera(setting, value) {
+      fetch(`http://${CAMERA_IP}/control?var=${setting}&val=${value}`)
+        .then(() => console.log(`Set ${setting} = ${value}`))
+        .catch(err => console.error('Camera control error:', err));
+    }
+
+    setInterval(() => {
+      fetch(`http://${SENSOR_IP}/data`)
+        .then(res => res.json())
+        .then(data => {
+          document.getElementById("temp").innerText = `${data.temp.toFixed(1)} °C`;
+          document.getElementById("hum").innerText = `${data.hum.toFixed(1)} %`;
+          document.getElementById("speed").innerText = `${data.speed.toFixed(1)} km/h`;
+          document.getElementById("rpm").innerText = `${data.rpm}`;
+        })
+        .catch(() => {
+          document.getElementById("temp").innerText = "-- °C";
+          document.getElementById("hum").innerText = "-- %";
+          document.getElementById("speed").innerText = "-- km/h";
+          document.getElementById("rpm").innerText = "--";
+        });
+    }, 2000);
+  </script>
+
+</body>
+</html>
