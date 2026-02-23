@@ -1,2 +1,2 @@
-# Hazardous Environment Monitoring & Exploration Rover
+# Hazardous Environment Monitoring & Exploration Rover (NUT ROVER)
 NUT Rover is a compact, high-torque RC-controlled robotic platform designed for hazardous environment monitoring and remote exploration. The system integrates real-time environmental sensing, live video streaming, and web-based telemetry visualization to enable safe and efficient remote operations in areas that are difficult or dangerous for humans to access.
