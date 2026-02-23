@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NUT Rover Control</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: #0d1117;
+      color: #00ffc3;
+      font-family: 'Orbitron', sans-serif;
+      margin: 0;
+      padding: 1rem;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #161b22;
+      padding: 1rem 2rem;
+      border-bottom: 1px solid #30363d;
+    }
+
+    .logo {
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    a {
+      color: #00ffc3;
+      text-decoration: none;
+      font-weight: 600;
+    }
+
+    .main-grid {
+      display: grid;
+      grid-template-columns: 1fr 2fr 1fr;
+      gap: 1rem;
+      margin-top: 2rem;
+    }
+
+    .panel {
+      background: #161b22;
+      padding: 1rem;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    }
+
+    .video-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .video-panel img {
+      width: 100%;
+      max-width: 480px;
+      border-radius: 12px;
+      margin-bottom: 1rem;
+    }
+
+    .btn-control, select {
+      background: #238636;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      padding: 0.5rem 1rem;
+      margin: 0.25rem 0;
+      cursor: pointer;
+      font-weight: 600;
+      width: 100%;
+    }
+
+    .btn-control:hover {
+      background: #2ea043;
+    }
+
+    .sensor-item {
+      background: #0d1117;
+      border: 1px solid #238636;
+      border-radius: 8px;
+      padding: 1rem;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    .sensor-item span {
+      display: block;
+      font-size: 1.5rem;
+      color: #7ee787;
+      margin-top: 0.5rem;
+    }
+
+    .movement-controls {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 1rem;
+      gap: 0.5rem;
+    }
+
+    footer {
+      margin-top: 2rem;
+      text-align: center;
+      color: #8b949e;
+      font-size: 0.9rem;
+    }
+
+    @media (max-width: 768px) {
+      .main-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">NUT Rover Control</div>
+  <a href="index.html">← Home</a>
+</header>
+
+<div class="main-grid">
+
+  <!-- Camera Controls -->
+  <div class="panel">
+    <h3>Camera Controls</h3>
+    <button class="btn-control" onclick="setCamera('vflip', 1)">Flip Vertical</button>
+    <button class="btn-control" onclick="setCamera('vflip', 0)">Unflip Vertical</button>
+    <button class="btn-control" onclick="setCamera('hmirror', 1)">Flip Horizontal</button>
+    <button class="btn-control" onclick="setCamera('hmirror', 0)">Unflip Horizontal</button>
+    <label for="quality" style="margin-top:1rem; display:block;">Resolution</label>
+    <select id="quality" onchange="setCamera('framesize', this.value)">
+      <option value="10">UXGA (1600x1200)</option>
+      <option value="9">SXGA (1280x1024)</option>
+      <option value="8">XGA (1024x768)</option>
+      <option value="7">SVGA (800x600)</option>
+      <option value="6">VGA (640x480)</option>
+      <option value="5" selected>QVGA (320x240)</option>
+      <option value="4">HQVGA (240x160)</option>
+    </select>
+  </div>
+
+  <!-- Live Video & Movement -->
+  <div class="panel video-panel">
+    <h3>Live Video</h3>
+    <img src="http://192.168.8.157:81/stream" alt="ESP32-CAM Stream" />
+    <div class="movement-controls">
+      <button class="btn-control" onclick="moveRover('forward')">↑ Forward</button>
+      <button class="btn-control" onclick="moveRover('left')">← Left</button>
+      <button class="btn-control" onclick="moveRover('stop')">■ Stop</button>
+      <button class="btn-control" onclick="moveRover('right')">→ Right</button>
+      <button class="btn-control" onclick="moveRover('backward')">↓ Backward</button>
+    </div>
+    <div id="status" style="margin-top: 1rem;"></div>
+  </div>
+
+  <!-- Environment Output -->
+  <div class="panel">
+    <h3>Environment Data</h3>
+    <div class="sensor-item">
+      Temperature<span id="temp">-- °C</span>
+    </div>
+    <div class="sensor-item">
+      Humidity<span id="hum">-- %</span>
+    </div>
+    <div class="sensor-item">
+      Speed<span id="speed">-- km/h</span>
+    </div>
+    <div class="sensor-item">
+      RPM<span id="rpm">--</span>
+    </div>
+  </div>
+</div>
+
+<footer>
+  &copy; 2025 NUT Rover Team
+</footer>
+
+<script>
+  const ESP32_IP = "192.168.8.157";
+
+  function setCamera(setting, value) {
+    fetch(`http://${ESP32_IP}/control?var=${setting}&val=${value}`)
+      .then(() => updateStatus(`Camera setting '${setting}' set to ${value}`))
+      .catch(() => updateStatus("Camera control error"));
+  }
+
+  function moveRover(direction) {
+    fetch(`http://${ESP32_IP}/move?dir=${direction}`)
+      .then(() => updateStatus(`Rover moving: ${direction}`))
+      .catch(() => updateStatus("Failed to send movement command"));
+  }
+
+  function updateStatus(message) {
+    const status = document.getElementById("status");
+    status.innerText = message;
+    setTimeout(() => status.innerText = "", 3000);
+  }
+
+  setInterval(() => {
+    fetch(`http://${ESP32_IP}/data`)
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById("temp").innerText = data.temp.toFixed(1) + " °C";
+        document.getElementById("hum").innerText = data.hum.toFixed(1) + " %";
+        document.getElementById("speed").innerText = data.speed.toFixed(1) + " km/h";
+        document.getElementById("rpm").innerText = data.rpm;
+      })
+      .catch(() => {
+        document.getElementById("temp").innerText = "-- °C";
+        document.getElementById("hum").innerText = "-- %";
+        document.getElementById("speed").innerText = "-- km/h";
+        document.getElementById("rpm").innerText = "--";
+      });
+  }, 2000);
+</script>
+
+</body>
+</html>

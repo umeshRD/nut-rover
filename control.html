@@ -6,113 +6,7 @@
   <title>NUT Rover Control</title>
   <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&display=swap" rel="stylesheet">
   <style>
-    body {
-      background: #0d1117;
-      color: #00ffc3;
-      font-family: 'Orbitron', sans-serif;
-      margin: 0;
-      padding: 1rem;
-    }
-
-    header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #161b22;
-      padding: 1rem 2rem;
-      border-bottom: 1px solid #30363d;
-    }
-
-    .logo {
-      font-size: 1.5rem;
-      font-weight: 700;
-    }
-
-    a {
-      color: #00ffc3;
-      text-decoration: none;
-      font-weight: 600;
-    }
-
-    .main-grid {
-      display: grid;
-      grid-template-columns: 1fr 2fr 1fr;
-      gap: 1rem;
-      margin-top: 2rem;
-    }
-
-    .panel {
-      background: #161b22;
-      padding: 1rem;
-      border-radius: 12px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
-    }
-
-    .video-panel {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-    }
-
-    .video-panel img {
-      width: 100%;
-      max-width: 480px;
-      border-radius: 12px;
-      margin-bottom: 1rem;
-    }
-
-    .btn-control, select {
-      background: #238636;
-      color: white;
-      border: none;
-      border-radius: 6px;
-      padding: 0.5rem 1rem;
-      margin: 0.25rem 0;
-      cursor: pointer;
-      font-weight: 600;
-      width: 100%;
-    }
-
-    .btn-control:hover {
-      background: #2ea043;
-    }
-
-    .sensor-item {
-      background: #0d1117;
-      border: 1px solid #238636;
-      border-radius: 8px;
-      padding: 1rem;
-      text-align: center;
-      margin-bottom: 1rem;
-    }
-
-    .sensor-item span {
-      display: block;
-      font-size: 1.5rem;
-      color: #7ee787;
-      margin-top: 0.5rem;
-    }
-
-    .movement-controls {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      margin-top: 1rem;
-      gap: 0.5rem;
-    }
-
-    footer {
-      margin-top: 2rem;
-      text-align: center;
-      color: #8b949e;
-      font-size: 0.9rem;
-    }
-
-    @media (max-width: 768px) {
-      .main-grid {
-        grid-template-columns: 1fr;
-      }
-    }
+    /* Keep all your existing CSS here as-is */
   </style>
 </head>
 <body>
@@ -123,10 +17,14 @@
 </header>
 
 <div class="main-grid">
-
-  <!-- Camera Controls -->
+  <!-- Camera Controls Panel -->
   <div class="panel">
     <h3>Camera Controls</h3>
+    <label for="cameraSelect" style="display:block; margin-bottom:0.25rem; color:#8b949e;">Active Camera</label>
+    <select id="cameraSelect" onchange="updateStatus('Active camera: ' + (this.value === 'cam1' ? 'Front' : 'Rear'))">
+      <option value="cam1" selected>Front (Cam 1)</option>
+      <option value="cam2">Rear (Cam 2)</option>
+    </select>
     <button class="btn-control" onclick="setCamera('vflip', 1)">Flip Vertical</button>
     <button class="btn-control" onclick="setCamera('vflip', 0)">Unflip Vertical</button>
     <button class="btn-control" onclick="setCamera('hmirror', 1)">Flip Horizontal</button>
@@ -141,38 +39,45 @@
       <option value="5" selected>QVGA (320x240)</option>
       <option value="4">HQVGA (240x160)</option>
     </select>
+
+    <div class="subtitle">Rover Controls</div>
+    <div class="movement-controls">
+      <div class="movement-grid">
+        <div></div>
+        <button class="btn-pad" aria-label="Forward" onclick="moveRover('forward')">↑</button>
+        <div></div>
+        <button class="btn-pad" aria-label="Left" onclick="moveRover('left')">←</button>
+        <button class="btn-pad" aria-label="Stop" onclick="moveRover('stop')">■</button>
+        <button class="btn-pad" aria-label="Right" onclick="moveRover('right')">→</button>
+        <div></div>
+        <button class="btn-pad" aria-label="Backward" onclick="moveRover('backward')">↓</button>
+        <div></div>
+      </div>
+    </div>
   </div>
 
-  <!-- Live Video & Movement -->
+  <!-- Live Video Panel -->
   <div class="panel video-panel">
     <h3>Live Video</h3>
-    <img src="http://192.168.8.157:81/stream" alt="ESP32-CAM Stream" />
-    <div class="movement-controls">
-      <button class="btn-control" onclick="moveRover('forward')">↑ Forward</button>
-      <button class="btn-control" onclick="moveRover('left')">← Left</button>
-      <button class="btn-control" onclick="moveRover('stop')">■ Stop</button>
-      <button class="btn-control" onclick="moveRover('right')">→ Right</button>
-      <button class="btn-control" onclick="moveRover('backward')">↓ Backward</button>
+    <div class="dual-stream">
+      <div>
+        <h4>Front Camera (Cam 1)</h4>
+        <img id="stream1" class="stream-half" src="" alt="Front Camera Stream" />
+      </div>
+      <div>
+        <h4>Rear Camera (Cam 2)</h4>
+        <img id="stream2" class="stream-half" src="" alt="Rear Camera Stream" />
+      </div>
     </div>
     <div id="status" style="margin-top: 1rem;"></div>
   </div>
+</div>
 
-  <!-- Environment Output -->
-  <div class="panel">
-    <h3>Environment Data</h3>
-    <div class="sensor-item">
-      Temperature<span id="temp">-- °C</span>
-    </div>
-    <div class="sensor-item">
-      Humidity<span id="hum">-- %</span>
-    </div>
-    <div class="sensor-item">
-      Speed<span id="speed">-- km/h</span>
-    </div>
-    <div class="sensor-item">
-      RPM<span id="rpm">--</span>
-    </div>
-  </div>
+<!-- Link to Environment Data Page -->
+<div style="text-align:center; margin: 1rem 0;">
+  <a href="environment.html">
+    <button class="btn-control" style="width:200px;">Environment Realtime Data</button>
+  </a>
 </div>
 
 <footer>
@@ -180,40 +85,86 @@
 </footer>
 
 <script>
-  const ESP32_IP = "192.168.8.157";
+  let ROVER_IP = "192.168.8.132";
+  let CAM1_IP = "192.168.8.157";
+  let CAM2_IP = "192.168.8.153";
+
+  function getActiveCameraIP() {
+    const sel = document.getElementById('cameraSelect');
+    return sel && sel.value === 'cam2' ? CAM2_IP : CAM1_IP;
+  }
+
+  function buildStreamUrl(ip) { return `http://${ip}:81/stream`; }
+  function refreshStreams() {
+    document.getElementById('stream1').src = buildStreamUrl(CAM1_IP);
+    document.getElementById('stream2').src = buildStreamUrl(CAM2_IP);
+  }
 
   function setCamera(setting, value) {
-    fetch(`http://${ESP32_IP}/control?var=${setting}&val=${value}`)
-      .then(() => updateStatus(`Camera setting '${setting}' set to ${value}`))
-      .catch(() => updateStatus("Camera control error"));
+    const ip = getActiveCameraIP();
+    fetch(`http://${ip}/control?var=${setting}&val=${value}`)
+      .then(() => updateStatus(`Camera setting '${setting}' set to ${value} on ${ip}`))
+      .catch(() => updateStatus('Camera control error'));
   }
 
   function moveRover(direction) {
-    fetch(`http://${ESP32_IP}/move?dir=${direction}`)
+    fetch(`http://${ROVER_IP}/move?dir=${direction}`)
       .then(() => updateStatus(`Rover moving: ${direction}`))
-      .catch(() => updateStatus("Failed to send movement command"));
+      .catch(() => updateStatus('Failed to send movement command'));
+  }
+
+  function handleKeyDown(event) {
+    if (event.isComposing || event.repeat) return;
+    const active = document.activeElement && document.activeElement.tagName;
+    if (active === 'INPUT' || active === 'TEXTAREA' || active === 'SELECT') return;
+    switch (event.key) {
+      case 'ArrowUp': event.preventDefault(); moveRover('forward'); break;
+      case 'ArrowLeft': event.preventDefault(); moveRover('left'); break;
+      case 'ArrowRight': event.preventDefault(); moveRover('right'); break;
+      case 'ArrowDown': event.preventDefault(); moveRover('backward'); break;
+      case ' ': case 'Spacebar': event.preventDefault(); moveRover('stop'); break;
+    }
+  }
+
+  function updateGauge(gaugeId, value, maxValue, unit) {
+    const gauge = document.getElementById(gaugeId);
+    const valueEl = document.getElementById(gaugeId.replace('Gauge', 'Value'));
+    if (gauge && valueEl) {
+      const percentage = Math.min((value / maxValue) * 100, 100);
+      const circumference = 2 * Math.PI * 50;
+      const fillLength = (percentage / 100) * circumference;
+      gauge.style.strokeDasharray = `${fillLength} ${circumference}`;
+      valueEl.innerText = value.toFixed(1);
+    }
   }
 
   function updateStatus(message) {
-    const status = document.getElementById("status");
+    const status = document.getElementById('status');
     status.innerText = message;
-    setTimeout(() => status.innerText = "", 3000);
+    setTimeout(() => status.innerText = '', 3000);
   }
 
+  function initUI() { refreshStreams(); document.addEventListener('keydown', handleKeyDown); }
+  document.addEventListener('DOMContentLoaded', initUI);
+
   setInterval(() => {
-    fetch(`http://${ESP32_IP}/data`)
+    fetch(`http://${ROVER_IP}/data`)
       .then(res => res.json())
       .then(data => {
-        document.getElementById("temp").innerText = data.temp.toFixed(1) + " °C";
-        document.getElementById("hum").innerText = data.hum.toFixed(1) + " %";
-        document.getElementById("speed").innerText = data.speed.toFixed(1) + " km/h";
-        document.getElementById("rpm").innerText = data.rpm;
+        updateGauge('tempGauge', data.temp, 100, '°C');
+        updateGauge('humGauge', data.hum, 100, '%');
+        updateGauge('speedGauge', data.speed, 100, 'km/h');
+        updateGauge('rpmGauge', data.rpm, 1000, 'rpm');
+        updateGauge('pressureGauge', data.pressure, 1000, 'hPa');
+        updateGauge('co2Gauge', data.co2, 1000, 'ppm');
       })
       .catch(() => {
-        document.getElementById("temp").innerText = "-- °C";
-        document.getElementById("hum").innerText = "-- %";
-        document.getElementById("speed").innerText = "-- km/h";
-        document.getElementById("rpm").innerText = "--";
+        updateGauge('tempGauge', 0, 100, '°C');
+        updateGauge('humGauge', 0, 100, '%');
+        updateGauge('speedGauge', 0, 100, 'km/h');
+        updateGauge('rpmGauge', 0, 1000, 'rpm');
+        updateGauge('pressureGauge', 0, 1000, 'hPa');
+        updateGauge('co2Gauge', 0, 1000, 'ppm');
       });
   }, 2000);
 </script>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ESP32-CAM Rover Dashboard</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #121212;
+      color: #f5f5f5;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      height: 100vh;
+    }
+    .sidebar {
+      width: 300px;
+      background: #1e1e1e;
+      padding: 15px;
+      overflow-y: auto;
+    }
+    .content {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #181818;
+    }
+    .video-container {
+      display: flex;
+      flex: 1;
+    }
+    .video {
+      flex: 1;
+      border: 2px solid #333;
+      margin: 5px;
+      background: black;
+    }
+    .panel {
+      margin-bottom: 20px;
+    }
+    .panel h2 {
+      margin-top: 0;
+      color: #4CAF50;
+    }
+    .btn-control {
+      padding: 10px;
+      margin: 5px;
+      background: #4CAF50;
+      border: none;
+      color: white;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .btn-control:hover {
+      background: #45a049;
+    }
+    .subtitle {
+      font-weight: bold;
+      margin-top: 10px;
+      margin-bottom: 5px;
+      color: #ccc;
+    }
+    .status-bar {
+      background: #333;
+      padding: 10px;
+      text-align: center;
+      color: #aaa;
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <div class="panel">
+      <h2>Camera Controls</h2>
+      <div class="subtitle">Select Camera</div>
+      <button class="btn-control" onclick="switchCamera('cam1')">Camera 1</button>
+      <button class="btn-control" onclick="switchCamera('cam2')">Camera 2</button>
+
+      <div class="subtitle">Resolution</div>
+      <select id="resolution" onchange="setResolution(this.value)">
+        <option value="QVGA">QVGA</option>
+        <option value="VGA">VGA</option>
+        <option value="SVGA">SVGA</option>
+        <option value="XGA">XGA</option>
+        <option value="SXGA">SXGA</option>
+        <option value="UXGA">UXGA</option>
+      </select>
+
+      <!-- ✅ Added LED ON/OFF section -->
+      <div class="subtitle">LED Control</div>
+      <button class="btn-control" onclick="setLED('on')">Turn LED ON</button>
+      <button class="btn-control" onclick="setLED('off')">Turn LED OFF</button>
+    </div>
+
+    <div class="panel">
+      <h2>Rover Controls</h2>
+      <button class="btn-control" onclick="move('forward')">Forward</button><br>
+      <button class="btn-control" onclick="move('left')">Left</button>
+      <button class="btn-control" onclick="move('stop')">Stop</button>
+      <button class="btn-control" onclick="move('right')">Right</button><br>
+      <button class="btn-control" onclick="move('backward')">Backward</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="video-container">
+      <img id="cam1" class="video" src="http://192.168.8.157:81/stream" alt="Camera 1">
+      <img id="cam2" class="video" src="http://192.168.8.153:81/stream" alt="Camera 2" style="display:none;">
+    </div>
+    <div class="status-bar" id="status">Status: Ready</div>
+  </div>
+
+  <script>
+    let activeCamera = 'cam1';
+
+    function switchCamera(cam) {
+      document.getElementById('cam1').style.display = cam === 'cam1' ? 'block' : 'none';
+      document.getElementById('cam2').style.display = cam === 'cam2' ? 'block' : 'none';
+      activeCamera = cam;
+      updateStatus(`Switched to ${cam.toUpperCase()}`);
+    }
+
+    function getActiveCameraIP() {
+      return activeCamera === 'cam1' ? '192.168.8.157' : '192.168.8.157';
+    }
+
+    function setResolution(res) {
+      const ip = getActiveCameraIP();
+      fetch(`http://${ip}/control?var=framesize&val=${res}`)
+        .then(() => updateStatus(`Resolution set to ${res} on ${ip}`))
+        .catch(() => updateStatus('Error setting resolution'));
+    }
+
+    function setLED(state) {
+      const ip = getActiveCameraIP();
+      fetch(`http://${ip}/led?state=${state}`)
+        .then(() => updateStatus(`LED ${state.toUpperCase()} on ${ip}`))
+        .catch(() => updateStatus('LED control error'));
+    }
+
+    function move(direction) {
+      updateStatus(`Rover moving ${direction}`);
+      // TODO: send movement command to ESP32 controlling rover
+    }
+
+    function updateStatus(message) {
+      document.getElementById('status').innerText = `Status: ${message}`;
+    }
+  </script>
+</body>
+</html>

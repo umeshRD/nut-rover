@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NUT Rover Control</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      background: #0d1117;
+      color: #00ffc3;
+      font-family: 'Orbitron', sans-serif;
+      margin: 0;
+      padding: 0.5rem;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #161b22;
+      padding: 0.75rem 1.5rem;
+      border-bottom: 1px solid #30363d;
+      margin-bottom: 1rem;
+    }
+    .logo { font-size: 1.25rem; font-weight: 700; }
+    a { color: #00ffc3; text-decoration: none; font-weight: 600; }
+    .main-grid {
+      display: grid;
+      grid-template-columns: 220px minmax(0, 1fr);
+      gap: 1rem;
+      height: calc(100vh - 280px);
+      min-height: 300px;
+    }
+    .panel {
+      background: #161b22;
+      padding: 0.4rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      overflow: hidden;
+    }
+    .panel h3 { margin: 0 0 0.4rem; font-size: 1.1rem; }
+    .video-panel { display: flex; flex-direction: column; align-items: stretch; height: 100%; }
+    .dual-stream {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.5rem;
+      height: calc(100% - 70px);
+      min-height: 240px;
+      position: relative;
+    }
+    .dual-stream::after {
+      content: '';
+      position: absolute;
+      left: 50%;
+      top: 0; bottom: 0;
+      width: 2px;
+      background: linear-gradient(to bottom, transparent, #7ee787, transparent);
+      transform: translateX(-50%);
+    }
+    .stream-half {
+      width: 100%;
+      height: 100%;
+      border-radius: 8px;
+      background: #020409;
+      object-fit: contain;
+      border: 2px solid #30363d;
+      padding: 0.5rem;
+    }
+    .stream-half h4 {
+      margin: 0 0 0.5rem;
+      font-size: 0.9rem;
+      color: #7ee787;
+      text-align: center;
+      padding: 0.3rem;
+      background: #21262d;
+      border-radius: 4px;
+    }
+    .toggle-btn {
+      background: #0d1117; color: #00ffc3; border: 1px solid #30363d;
+      border-radius: 4px; padding: 0.2rem 0.4rem; cursor: pointer;
+      font-weight: 600; font-size: 0.95rem;
+    }
+    .toggle-btn:hover { background: #2ea043; border-color: #2ea043; color: white; }
+    .btn-control, select {
+      background: #238636; color: white; border: none;
+      border-radius: 4px; padding: 0.2rem 0.3rem;
+      margin: 0.08rem 0; cursor: pointer; font-weight: 600;
+      width: 100%; font-size: 0.95rem;
+    }
+    .movement-grid {
+      display: grid; grid-template-columns: repeat(3, auto);
+      grid-template-rows: repeat(3, auto); gap: 0.2rem;
+      justify-content: center; align-items: center;
+    }
+    .btn-pad {
+      background: #238636; color: white; border: none; border-radius: 5px;
+      width: 32px; height: 32px; display: inline-flex;
+      align-items: center; justify-content: center;
+      font-weight: 700; font-size: 1rem; cursor: pointer;
+    }
+    .btn-pad:hover { background: #2ea043; }
+    .sensor-item {
+      background: #0d1117; border: 1px solid #238636;
+      border-radius: 6px; padding: 0.4rem; text-align: center;
+    }
+    .gauge-container { position: relative; width: 70px; height: 70px; margin: 0 auto 0.25rem; }
+    .gauge-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .gauge-bg { fill: none; stroke: #30363d; stroke-width: 3; }
+    .gauge-fill { fill: none; stroke: #238636; stroke-width: 3; stroke-linecap: round; transition: stroke-dasharray 0.5s ease; }
+    .gauge-value { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1rem; font-weight: 700; color: #7ee787; }
+    .gauge-label { font-size: 0.9rem; color: #8b949e; margin-top: 0.25rem; }
+    .gauge-unit { font-size: 0.8rem; color: #6e7681; }
+    footer { margin-top: 1rem; text-align: center; color: #8b949e; font-size: 0.8rem; }
+  </style>
+</head>
+<body>
+<header>
+  <div class="logo">NUT Rover Control</div>
+  <a href="index.html">← Home</a>
+</header>
+
+<div class="main-grid">
+  <!-- Camera Controls -->
+  <div class="panel">
+    <h3>Camera Controls</h3>
+    <label for="cameraSelect">Active Camera</label>
+    <select id="cameraSelect">
+      <option value="cam1" selected>Front (Cam 1)</option>
+      <option value="cam2">Rear (Cam 2)</option>
+    </select>
+    <button class="btn-control" onclick="setCamera('vflip', 1)">Flip Vertical</button>
+    <button class="btn-control" onclick="setCamera('vflip', 0)">Unflip Vertical</button>
+    <button class="btn-control" onclick="setCamera('hmirror', 1)">Flip Horizontal</button>
+    <button class="btn-control" onclick="setCamera('hmirror', 0)">Unflip Horizontal</button>
+    <label for="quality">Resolution</label>
+    <select id="quality" onchange="setCamera('framesize', this.value)">
+      <option value="10">UXGA (1600x1200)</option>
+      <option value="9">SXGA (1280x1024)</option>
+      <option value="8">XGA (1024x768)</option>
+      <option value="7">SVGA (800x600)</option>
+      <option value="6">VGA (640x480)</option>
+      <option value="5" selected>QVGA (320x240)</option>
+      <option value="4">HQVGA (240x160)</option>
+    </select>
+    <div class="movement-controls">
+      <div class="movement-grid">
+        <div></div><button class="btn-pad" onclick="moveRover('forward')">↑</button><div></div>
+        <button class="btn-pad" onclick="moveRover('left')">←</button>
+        <button class="btn-pad" onclick="moveRover('stop')">■</button>
+        <button class="btn-pad" onclick="moveRover('right')">→</button>
+        <div></div><button class="btn-pad" onclick="moveRover('backward')">↓</button><div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Live Video -->
+  <div class="panel video-panel">
+    <h3>Live Video</h3>
+    <div class="dual-stream">
+      <div>
+        <h4>Front Camera (Cam 1)</h4>
+        <img id="stream1" class="stream-half" src="" alt="Front Camera Stream" />
+      </div>
+      <div>
+        <h4>Rear Camera (Cam 2)</h4>
+        <img id="stream2" class="stream-half" src="" alt="Rear Camera Stream" />
+      </div>
+    </div>
+    <div id="status" style="margin-top: 1rem;"></div>
+  </div>
+</div>
+
+<!-- Environment Output -->
+<div class="panel" style="margin-top: 1rem;">
+  <h3>Environment Data</h3>
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+    <div class="sensor-item">
+      <div class="gauge-container">
+        <svg class="gauge-svg" viewBox="0 0 120 120">
+          <circle class="gauge-bg" cx="60" cy="60" r="50"></circle>
+          <circle class="gauge-fill" id="tempGauge" cx="60" cy="60" r="50"></circle>
+        </svg>
+        <div class="gauge-value" id="tempValue">--</div>
+      </div>
+      <div class="gauge-label">Temperature</div><div class="gauge-unit">°C</div>
+    </div>
+    <div class="sensor-item">
+      <div class="gauge-container">
+        <svg class="gauge-svg" viewBox="0 0 120 120">
+          <circle class="gauge-bg" cx="60" cy="60" r="50"></circle>
+          <circle class="gauge-fill" id="humGauge" cx="60" cy="60" r="50"></circle>
+        </svg>
+        <div class="gauge-value" id="humValue">--</div>
+      </div>
+      <div class="gauge-label">Humidity</div><div class="gauge-unit">%</div>
+    </div>
+    <div class="sensor-item">
+      <div class="gauge-container">
+        <svg class="gauge-svg" viewBox="0 0 120 120">
+          <circle class="gauge-bg" cx="60" cy="60" r="50"></circle>
+          <circle class="gauge-fill" id="speedGauge" cx="60" cy="60" r="50"></circle>
+        </svg>
+        <div class="gauge-value" id="speedValue">--</div>
+      </div>
+      <div class="gauge-label">Speed</div><div class="gauge-unit">km/h</div>
+    </div>
+    <div class="sensor-item">
+      <div class="gauge-container">
+        <svg class="gauge-svg" viewBox="0 0 120 120">
+          <circle class="gauge-bg" cx="60" cy="60" r="50"></circle>
+          <circle class="gauge-fill" id="rpmGauge" cx="60" cy="60" r="50"></circle>
+        </svg>
+        <div class="gauge-value" id="rpmValue">--</div>
+      </div>
+      <div class="gauge-label">RPM</div><div class="gauge-unit">rpm</div>
+    </div>
+    <div class="sensor-item">
+      <div class="gauge-container">
+        <svg class="gauge-svg" viewBox="0 0 120 120">
+          <circle class="gauge-bg" cx="60" cy="60" r="50"></circle>
+          <circle class="gauge-fill" id="pressureGauge" cx="60" cy="60" r="50"></circle>
+        </svg>
+        <div class="gauge-value" id="pressureValue">--</div>
+      </div>
+      <div class="gauge-label">Air Pressure</div><div class="gauge-unit">hPa</div>
+    </div>
+    <div class="sensor-item">
+      <div class="gauge-container">
+        <svg class="gauge-svg" viewBox="0 0 120 120">
+          <circle class="gauge-bg" cx="60" cy="60" r="50"></circle>
+          <circle class="gauge-fill" id="co2Gauge" cx="60" cy="60" r="50"></circle>
+        </svg>
+        <div class="gauge-value" id="co2Value">--</div>
+      </div>
+      <div class="gauge-label">CO2 Level</div><div class="gauge-unit">ppm</div>
+    </div>
+  </div>
+</div>
+
+<footer>&copy; 2025 NUT Rover Team</footer>
+
+<script>
+  let ROVER_IP = "192.168.8.132";   // ESP32 Rover with sensors
+  let CAM1_IP = "192.168.8.157";    // Front camera ESP32-CAM
+  let CAM2_IP = "192.168.8.121";    // Rear camera ESP32-CAM
+
+  function getActiveCameraIP() {
+    return document.getElementById('cameraSelect').value === 'cam2' ? CAM2_IP : CAM1_IP;
+  }
+  function buildStreamUrl(ip) { return `http://${ip}:81/stream`; }
+  function refreshStreams() {
+    document.getElementById('stream1').src = buildStreamUrl(CAM1_IP);
+    document.getElementById('stream2').src = buildStreamUrl(CAM2_IP);
+  }
+  function setCamera(setting, value) {
+    fetch(`http://${getActiveCameraIP()}/control?var=${setting}&val=${value}`)
+      .then(() => updateStatus(`Camera setting '${setting}' set to ${value}`))
+      .catch(() => updateStatus('Camera control error'));
+  }
+  function moveRover(direction) {
+    fetch(`http://${ROVER_IP}/move?dir=${direction}`)
+      .then(() => updateStatus(`Rover moving: ${direction}`))
+      .catch(() => updateStatus('Failed to send movement command'));
+  }
+  function handleKeyDown(event) {
+    if (event.isComposing || event.repeat) return;
+    if (["INPUT", "TEXTAREA", "SELECT"].includes(document.activeElement.tagName)) return;
+    const keyMap = { ArrowUp: 'forward', ArrowDown: 'backward', ArrowLeft: 'left', ArrowRight: 'right', ' ': 'stop', Spacebar: 'stop' };
+    if (keyMap[event.key]) { event.preventDefault(); moveRover(keyMap[event.key]); }
+  }
+  function updateGauge(gaugeId, value, maxValue) {
+    const gauge = document.getElementById(gaugeId);
+    const valueEl = document.getElementById(gaugeId.replace('Gauge', 'Value'));
+    if (gauge && valueEl) {
+      const circumference = 2 * Math.PI * 50;
+      const percentage = Math.min(value / maxValue, 1);
+      gauge.style.strokeDasharray = `${percentage * circumference} ${circumference}`;
+      valueEl.innerText = value.toFixed(1);
+    }
+  }
+  function updateStatus(message) {
+    const status = document.getElementById('status');
+    status.innerText = message;
+    setTimeout(() => status.innerText = '', 3000);
+  }
+  function fetchSensorData() {
+    fetch(`http://${ROVER_IP}/data`)
+      .then(res => res.json())
+      .then(data => {
+        updateGauge('tempGauge', data.temp, 100);
+        updateGauge('humGauge', data.hum, 100);
+        updateGauge('speedGauge', data.speed, 100);
+        updateGauge('rpmGauge', data.rpm, 1000);
+        updateGauge('pressureGauge', data.pressure, 1100);
+        updateGauge('co2Gauge', data.co2, 2000);
+      })
+      .catch(err => console.error("Sensor fetch error:", err));
+  }
+  function initUI() {
+    refreshStreams();
+    document.addEventListener('keydown', handleKeyDown);
+    setInterval(fetchSensorData, 2000);
+  }
+  document.addEventListener('DOMContentLoaded', initUI);
+</script>
+</body>
+</html>
